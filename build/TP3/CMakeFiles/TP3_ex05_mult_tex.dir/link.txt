@@ -1,0 +1,1 @@
+/usr/bin/g++ -O3 -DNDEBUG CMakeFiles/TP3_ex05_mult_tex.dir/ex05_mult_tex.cpp.o -o "/home/aertynb/Documents/M2/Synthese Image/GL_UGE_Template/bin/TP3_ex05_mult_tex"  ../glimac/libglimac.a ../glimac/third-party/glfw/src/libglfw3.a /usr/lib/x86_64-linux-gnu/librt.a -lm -ldl ../glimac/libglad.a 
