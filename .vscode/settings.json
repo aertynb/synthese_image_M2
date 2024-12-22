@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "__config": "cpp",
+        "functional": "cpp",
+        "memory": "cpp",
+        "complex": "cpp",
+        "valarray": "cpp",
+        "cstddef": "cpp"
+    }
+}

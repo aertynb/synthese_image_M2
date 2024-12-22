@@ -1,1 +1,0 @@
-/usr/bin/g++ -O3 -DNDEBUG CMakeFiles/TP1_ex01_triangle_blanc.dir/ex01_triangle_blanc.cpp.o -o "/home/aertynb/Documents/M2/Synthese Image/GL_UGE_Template/bin/TP1_ex01_triangle_blanc"  ../glimac/libglimac.a ../glimac/third-party/glfw/src/libglfw3.a /usr/lib/x86_64-linux-gnu/librt.a -lm -ldl ../glimac/libglad.a 

@@ -9,7 +9,7 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/bin)
 # Include glimac
 add_subdirectory(glimac)
 
-file(GLOB TP_DIRECTORIES "TP*")
+file(GLOB TP_DIRECTORIES "TP*" "Project")
 
 foreach(TP ${TP_DIRECTORIES})
     message(WARNING "Configuring ${TP}")

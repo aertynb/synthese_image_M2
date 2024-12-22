@@ -1,1 +1,0 @@
-/usr/bin/g++ -O3 -DNDEBUG CMakeFiles/TP4_ex02_freefly.dir/ex02_freefly.cpp.o -o "/home/aertynb/Documents/M2/Synthese Image/GL_UGE_Template/bin/TP4_ex02_freefly"  ../glimac/libglimac.a ../glimac/third-party/glfw/src/libglfw3.a /usr/lib/x86_64-linux-gnu/librt.a -lm -ldl ../glimac/libglad.a 

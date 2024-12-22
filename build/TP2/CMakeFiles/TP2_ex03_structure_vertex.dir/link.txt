@@ -1,1 +1,0 @@
-/usr/bin/g++ -g CMakeFiles/TP2_ex03_structure_vertex.dir/ex03_structure_vertex.cpp.o -o "/home/aertynb/Documents/M2/Synthese Image/GL_UGE_Template/bin/TP2_ex03_structure_vertex"  ../glimac/libglimac.a ../glimac/third-party/glfw/src/libglfw3.a /usr/lib/x86_64-linux-gnu/librt.a -lm -ldl ../glimac/libglad.a 

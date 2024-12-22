@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/TP2_ex07_texture.dir/ex07_texture.cpp.o -o ../TP2_ex07_texture  ../glimac/libglimac.a ../glimac/third-party/glfw/src/libglfw3.a /usr/lib/x86_64-linux-gnu/librt.a -lm -ldl ../glimac/libglad.a 

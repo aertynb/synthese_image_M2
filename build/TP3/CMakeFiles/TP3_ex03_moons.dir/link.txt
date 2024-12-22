@@ -1,1 +1,0 @@
-/usr/bin/g++ -O3 -DNDEBUG CMakeFiles/TP3_ex03_moons.dir/ex03_moons.cpp.o -o "/home/aertynb/Documents/M2/Synthese Image/GL_UGE_Template/bin/TP3_ex03_moons"  ../glimac/libglimac.a ../glimac/third-party/glfw/src/libglfw3.a /usr/lib/x86_64-linux-gnu/librt.a -lm -ldl ../glimac/libglad.a 

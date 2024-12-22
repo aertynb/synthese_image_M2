@@ -61,11 +61,6 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    glimac::FilePath applicationPath(argv[0]);
-    glimac::Program program = loadProgram(applicationPath.dirPath() + "TP1/shaders/triangle.vs.glsl",
-                                          applicationPath.dirPath() + "TP1/shaders/triangle.fs.glsl");
-    program.use();
-
     /* Hook input callbacks */
     glfwSetKeyCallback(window, &key_callback);
     glfwSetMouseButtonCallback(window, &mouse_button_callback);
@@ -76,6 +71,11 @@ int main(int argc, char *argv[])
     /*********************************
      * HERE SHOULD COME THE INITIALIZATION CODE
      *********************************/
+
+    glimac::FilePath applicationPath(argv[0]);
+    glimac::Program program = loadProgram(applicationPath.dirPath() + "TP1/shaders/triangle.vs.glsl",
+                                          applicationPath.dirPath() + "TP1/shaders/triangle.fs.glsl");
+    program.use();
     
     GLuint vbo;
     glGenBuffers(1, &vbo);
