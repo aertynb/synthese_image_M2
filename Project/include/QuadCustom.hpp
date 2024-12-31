@@ -36,6 +36,10 @@ public:
 
     // Initializes VAO pointers for position, normal, and texture coordinates
     void initVaoPointer(GLuint vPos, GLuint vNorm, GLuint vTex) const {
+        std::cout << "quad vao init" << std::endl;
+        glEnableVertexAttribArray(vPos);
+        glEnableVertexAttribArray(vNorm);
+        glEnableVertexAttribArray(vTex);
         glVertexAttribPointer(vPos, 3, GL_FLOAT, GL_FALSE, getVertexSize(), (GLvoid*) offsetof(glimac::QuadVertex, position));
         glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, getVertexSize(), (GLvoid*) offsetof(glimac::QuadVertex, normal));
         glVertexAttribPointer(vTex, 2, GL_FLOAT, GL_FALSE, getVertexSize(), (GLvoid*) offsetof(glimac::QuadVertex, texCoords));
