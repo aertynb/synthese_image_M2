@@ -35,6 +35,10 @@ public:
     }
 
     void initVaoPointer(GLuint vPos, GLuint vNorm, GLuint vTex) const{
+        std::cout << "sphere vao init" << std::endl;
+        glEnableVertexAttribArray(vPos);
+        glEnableVertexAttribArray(vNorm);
+        glEnableVertexAttribArray(vTex);
         glVertexAttribPointer(vPos, 3, GL_FLOAT, GL_FALSE, getVertexSize(), (GLvoid*) offsetof(glimac::SphereVertex, position));
         glVertexAttribPointer(vNorm, 3, GL_FLOAT, GL_FALSE, getVertexSize(), (GLvoid*) offsetof(glimac::SphereVertex, normal));
         glVertexAttribPointer(vTex, 2, GL_FLOAT, GL_FALSE, getVertexSize(), (GLvoid*) offsetof(glimac::SphereVertex, texCoords));

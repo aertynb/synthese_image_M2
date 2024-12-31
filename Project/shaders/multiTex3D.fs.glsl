@@ -13,5 +13,6 @@ out vec3 fFragColor;
 void main() {
     vec3 earthTex = texture(uEarthTexture, vVertexTex).xyz;
     vec3 cloudTex = texture(uCloudTexture, vVertexTex).xyz;
-    fFragColor = earthTex + cloudTex;
+    //vec3(fVertexNormal.x, 1, 1);
+    fFragColor = vec3(1, 1, 1);
 }

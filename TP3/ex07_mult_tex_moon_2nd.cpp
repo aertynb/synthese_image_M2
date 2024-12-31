@@ -121,9 +121,9 @@ int main(int argc, char *argv[])
     EarthProgram earthProgram (applicationPath);
     MoonProgram moonProgram (applicationPath);
 
-    auto earth_tex_ptr = glimac::loadImage("/home/aertynb/Documents/M2/Synthese Image/GL_UGE_Template/assets/texture/EarthMap.jpg");
-    auto moon_tex_ptr = glimac::loadImage("/home/aertynb/Documents/M2/Synthese Image/GL_UGE_Template/assets/texture/MoonMap.jpg");
-    auto cloud_tex_ptr = glimac::loadImage("/home/aertynb/Documents/M2/Synthese Image/GL_UGE_Template/assets/texture/CloudMap.jpg");
+    auto earth_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/EarthMap.jpg");
+    auto moon_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/MoonMap.jpg");
+    auto cloud_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/CloudMap.jpg");
 
     if (earth_tex_ptr == NULL || moon_tex_ptr == NULL) {
         std::cout << "Erreur chargement de texture terre" << std::endl;

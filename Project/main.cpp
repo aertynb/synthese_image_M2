@@ -7,10 +7,13 @@
 #include <glimac/Image.hpp>
 #include <glimac/getTime.hpp>
 #include <glimac/Sphere.hpp>
+#include <memory>
 
 #include "include/SphereCustom.hpp"
 #include "include/QuadCustom.hpp"
 #include "include/FreeflyCamera.hpp"
+
+#include "pointer.hpp"
 
 int window_width  = 800;
 int window_height = 800;
@@ -184,30 +187,54 @@ int main(int argc, char *argv[])
     glimac::SphereCustom sphere(1, 32, 16);
     glimac::QuadCustom quad(1, 1);
 
-    GLuint vbo;
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    std::vector<std::unique_ptr<Object>> objs;
+    objs.emplace_back(std::make_unique<glimac::SphereCustom>(1, 32, 16));// objs.emplace_back(std::make_unique<glimac::QuadCustom>(1, 1));
+
+
+    //GLuint vbo;
+    //glGenBuffers(1, &vbo);
+    //glBindBuffer(GL_ARRAY_BUFFER, vbo);
     //auto vertices = sphere.getDataPointer();
     //glBufferData(GL_ARRAY_BUFFER, sphere.getVertexCount()*sphere.getVertexSize(), vertices, GL_STATIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, quad.getVertexCount()*quad.getVertexSize(), quad.getDataPointer(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    //glBufferData(GL_ARRAY_BUFFER, quad.getVertexCount()*quad.getVertexSize(), quad.getDataPointer(), GL_STATIC_DRAW);
+    //glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    //GLuint vao;
+    //glGenVertexArrays(1, &vao);
+    //glBindVertexArray(vao);
+    //glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
+    //const GLuint VERTEX_ATTR_POSITION = 1;
+    //const GLuint VERTEX_ATTR_NORMAL = 2;
+    //const GLuint VERTEX_ATTR_TEX = 3;
+
+    //glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
+    //glEnableVertexAttribArray(VERTEX_ATTR_NORMAL);
+    //glEnableVertexAttribArray(VERTEX_ATTR_TEX);
+
+    //sphere.initVaoPointer(VERTEX_ATTR_POSITION, VERTEX_ATTR_NORMAL, VERTEX_ATTR_TEX);
+    //quad.initVaoPointer(VERTEX_ATTR_POSITION, VERTEX_ATTR_NORMAL, VERTEX_ATTR_TEX);
+
+    std::vector<GLuint> vbos(objs.size()); // Initialize with the correct size
+    std::vector<GLuint> vaos(objs.size()); // Initialize with the correct size 
     const GLuint VERTEX_ATTR_POSITION = 1;
     const GLuint VERTEX_ATTR_NORMAL = 2;
     const GLuint VERTEX_ATTR_TEX = 3;
 
-    glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
-    glEnableVertexAttribArray(VERTEX_ATTR_NORMAL);
-    glEnableVertexAttribArray(VERTEX_ATTR_TEX);
+    glGenBuffers(objs.size(), vbos.data());
+    glGenVertexArrays(objs.size(), vaos.data());
 
-    //sphere.initVaoPointer(VERTEX_ATTR_POSITION, VERTEX_ATTR_NORMAL, VERTEX_ATTR_TEX);
-    quad.initVaoPointer(VERTEX_ATTR_POSITION, VERTEX_ATTR_NORMAL, VERTEX_ATTR_TEX);
+    for (size_t idx = 0; idx < objs.size(); ++idx) {
+        glBindVertexArray(vaos[idx]);
+        glBindBuffer(GL_ARRAY_BUFFER, vbos[idx]);
 
+        const auto &obj = objs[idx];
+        glBufferData(GL_ARRAY_BUFFER, obj->getVertexCount() * obj->getVertexSize(), obj->getDataPointer(), GL_STATIC_DRAW);
+
+        obj->initVaoPointer(VERTEX_ATTR_POSITION, VERTEX_ATTR_NORMAL, VERTEX_ATTR_TEX);
+    }
+
+    // Unbind after setup
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
@@ -231,45 +258,50 @@ int main(int argc, char *argv[])
         /*********************************
         * HERE SHOULD COME THE RENDERING CODE
         *********************************/
-        glBindVertexArray(vao);
+        //glBindVertexArray(vao);
+        for (size_t idx = 0; idx < objs.size(); ++idx) {
+            glBindVertexArray(vaos[idx]);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, earth_tex); // la texture earthTexture est bindée sur l'unité GL_TEXTURE0
-        
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, cloud_tex); // la texture cloudTexture est bindée sur l'unité GL_TEXTURE1
+            // For Earth
+            if (idx == 0) {
+                earthProgram.m_Program.use();
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, earth_tex);
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, cloud_tex);
+                glUniform1i(earthProgram.uEarthTexture, 0);
+                glUniform1i(earthProgram.uCloudTexture, 1);
 
-        earthProgram.m_Program.use(); // using shader for earth
-        glUniform1i(earthProgram.uEarthTexture, 0); // OpenGL will search for uEarthTexture at 0
-        glUniform1i(earthProgram.uCloudTexture, 1); // OpenGL will search for uEarthTexture at 1
+                glUniformMatrix4fv(earthProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * mv_matrix));
+                glUniformMatrix4fv(earthProgram.uMVMatrix, 1, GL_FALSE, glm::value_ptr(mv_matrix));
+                glUniformMatrix4fv(earthProgram.uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normal_matrix));
 
-        // rotation terre
-        //auto e_mv_matrix = glm::rotate(mv_matrix, glimac::getTime(), glm::vec3(0, -1, 0));
-        //glUniformMatrix4fv(earthProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * e_mv_matrix)); // mvp matrix with rotation
-        // sending matrix
-        glUniformMatrix4fv(earthProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * mv_matrix));
-        glUniformMatrix4fv(earthProgram.uMVMatrix, 1, GL_FALSE, glm::value_ptr(mv_matrix));
-        glUniformMatrix4fv(earthProgram.uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normal_matrix));
+                glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
 
-        glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
-        
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, moon_tex); // binding cloud tex on GL_TEXTURE0
-        
-        moonProgram.m_Program.use(); // using shader for moon
-        for (auto i = 0; i < 32; i++) {
-            auto a_mv_matrix = glm::rotate(mv_matrix, glimac::getTime(), glm::vec3(0, 1, 0));
-            a_mv_matrix = glm::translate(a_mv_matrix, moons[i]); // Translation * Rotation * Translation
-            a_mv_matrix = glm::scale(a_mv_matrix, glm::vec3(0.2, 0.2, 0.2)); // Translation * Rotation * Translation * Scale
-            glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-            glDrawArrays(GL_TRIANGLES, 0, sphere.getVertexCount());
+                moonProgram.m_Program.use();
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, moon_tex);
+
+                for (const auto &moon_pos : moons) {
+                    auto a_mv_matrix = glm::rotate(mv_matrix, glimac::getTime(), glm::vec3(0, 1, 0));
+                    a_mv_matrix = glm::translate(a_mv_matrix, moon_pos);
+                    a_mv_matrix = glm::scale(a_mv_matrix, glm::vec3(0.2f));
+
+                    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+                    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+                }
+            }
+
+            // For Moons
+            else {
+                // TO DO
+            }
         }
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0); // débind sur l'unité GL_TEXTURE0
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, 0); // débind sur l'unité GL_TEXTURE1
+        // Unbind after rendering
+        glBindTexture(GL_TEXTURE_2D, 0);
         glBindVertexArray(0);
+
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
@@ -279,8 +311,10 @@ int main(int argc, char *argv[])
     glDeleteTextures(1, &earth_tex);
     glDeleteTextures(1, &moon_tex);
     glDeleteTextures(1, &cloud_tex);
-    glDeleteBuffers(1, &vbo);
-    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(objs.size(), vbos.data());
+    glDeleteVertexArrays(objs.size(), vaos.data());
+    //glDeleteBuffers(objs.size(), vbo.data());
+    //glDeleteVertexArrays(objs.size(), vao.data());
     glfwTerminate();
     return 0;
 }

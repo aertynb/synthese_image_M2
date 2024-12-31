@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     auto mv_loc = glGetUniformLocation(program.getGLId(), "uMVMatrix");
     auto normal_loc = glGetUniformLocation(program.getGLId(), "uNormalMatrix");
 
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
     /* Hook input callbacks */
     glfwSetKeyCallback(window, &key_callback);
     glfwSetMouseButtonCallback(window, &mouse_button_callback);

@@ -1,3 +1,9 @@
+# Set the C++ standard
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+
 file(GLOB HEADER_FILES *.hpp)
 file(GLOB EXT_SRC_FILES [^e][^x]*.cpp)
 file(GLOB EXE_SRC_FILES ex[^\#]*.cpp)

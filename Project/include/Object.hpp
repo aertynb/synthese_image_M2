@@ -8,7 +8,8 @@
 
 class Object {
 public:
-    Object() {};
+    Object() = default;
+    virtual ~Object() = default;
     virtual const ObjectVertex* getDataPointer() const = 0;
     // Renvoit le nombre de vertex
     virtual GLsizei getVertexCount() const = 0;
