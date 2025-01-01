@@ -12,6 +12,7 @@
 #include "include/SphereCustom.hpp"
 #include "include/QuadCustom.hpp"
 #include "include/FreeflyCamera.hpp"
+#include "include/CubeCustom.hpp"
 
 #include "pointer.hpp"
 
@@ -165,6 +166,85 @@ void draw_earth_moon_scene(const EarthProgram& earthProgram, const MoonProgram& 
     }
 }
 
+void draw_room1(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, int idx, 
+                GLuint floor_tex, GLuint wall_brick_tex) {
+    auto mv_matrix = camera.getViewMatrix();
+    auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
+    glm::vec3 scale(24, 1, 20);
+
+    moonProgram.m_Program.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, floor_tex);
+    
+    //floor
+    auto a_mv_matrix = glm::scale(glm::translate(mv_matrix, glm::vec3(0, -2, 0)), scale);
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    glBindTexture(GL_TEXTURE_2D, wall_brick_tex);
+
+    //wall1
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(0, -2, scale.z/2));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall2
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2, -2, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall3
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2, -2, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall3
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2, -2, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall4 1/2
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2 - 4, -2, -scale.z/2));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall4 2/2
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2 + 4, -2, -scale.z/2));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+}
+
+void draw_skybox(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, int idx, 
+                GLuint sky_tex) {
+    auto mv_matrix = camera.getViewMatrix();
+    auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 200.f);
+    glm::vec3 scale(24, 1, 20);
+
+    moonProgram.m_Program.use();
+    glActiveTexture(GL_TEXTURE0);
+
+    mv_matrix =  glm::scale( glm::translate(mv_matrix, glm::vec3(0, 0, 0)), glm::vec3(200) );
+    glBindTexture(GL_TEXTURE_2D, sky_tex);
+
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+}
+
 void process_continuous_input(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         camera.moveUp(0.2f);
@@ -219,8 +299,10 @@ int main(int argc, char *argv[])
     auto moon_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/MoonMap.jpg");
     auto cloud_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/CloudMap.jpg");
     auto wall_brick_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/wall_brick.jpg");
+    auto floor_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/floor.png");
+    auto sky_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/sky.png");
 
-    if (earth_tex_ptr == NULL || moon_tex_ptr == NULL || cloud_tex_ptr == NULL || wall_brick_tex_ptr == NULL) {
+    if (earth_tex_ptr == NULL || moon_tex_ptr == NULL || cloud_tex_ptr == NULL || wall_brick_tex_ptr == NULL || floor_tex_ptr == NULL || sky_tex_ptr == NULL) {
         std::cout << "Erreur chargement de texture" << std::endl;
         return -1;
     } 
@@ -240,9 +322,12 @@ int main(int argc, char *argv[])
 
     glimac::SphereCustom sphere(1, 32, 16);
     glimac::QuadCustom quad(1, 1);
+    glimac::CubeCustom cube(1, 1, 1);
 
     std::vector<std::unique_ptr<Object>> objs;
-    objs.emplace_back(std::make_unique<glimac::SphereCustom>(1, 32, 16)); objs.emplace_back(std::make_unique<glimac::QuadCustom>(1, 1));
+    objs.emplace_back(std::make_unique<glimac::SphereCustom>(1, 32, 16)); 
+    objs.emplace_back(std::make_unique<glimac::QuadCustom>(1, 1));
+    objs.emplace_back(std::make_unique<glimac::CubeCustom>(cube));
 
     std::vector<GLuint> vbos(objs.size()); // Initialize with the correct size
     std::vector<GLuint> vaos(objs.size()); // Initialize with the correct size 
@@ -273,6 +358,8 @@ int main(int argc, char *argv[])
     GLuint moon_tex = gen_tex_gluint(moon_tex_ptr);
     GLuint cloud_tex = gen_tex_gluint(cloud_tex_ptr);
     GLuint wall_brick_tex = gen_tex_gluint(wall_brick_tex_ptr);
+    GLuint floor_tex = gen_tex_gluint(floor_tex_ptr);
+    GLuint sky_tex = gen_tex_gluint(sky_tex_ptr);
 
     for (auto i = 0; i < 32; i++) {
         moons.push_back(glm::sphericalRand(2.));
@@ -295,64 +382,12 @@ int main(int argc, char *argv[])
                 draw_earth_moon_scene(earthProgram, moonProgram, idx, earth_tex, cloud_tex, moon_tex, objs, moons);
             }
 
-            else {
-                auto mv_matrix = camera.getViewMatrix();
-                auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
-                glm::vec3 scale(24, 1, 20);
+            if (idx == 1) {
+                draw_room1(moonProgram, objs, idx, floor_tex, wall_brick_tex);
+            }
 
-                moonProgram.m_Program.use();
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, wall_brick_tex);
-                
-                //floor
-                auto a_mv_matrix = glm::scale(glm::translate(mv_matrix, glm::vec3(0, -2, 0)), scale);
-                glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-                glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-                //wall1
-                a_mv_matrix = glm::translate(mv_matrix, glm::vec3(0, -2, scale.z/2));
-                a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-                a_mv_matrix = glm::scale(a_mv_matrix, scale);
-                glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-                glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-                //wall2
-                a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2, -2, 0));
-                a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-                a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-                a_mv_matrix = glm::scale(a_mv_matrix, scale);
-                glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-                glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-                //wall3
-                a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2, -2, 0));
-                a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-                a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-                a_mv_matrix = glm::scale(a_mv_matrix, scale);
-                glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-                glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-                //wall3
-                a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2, -2, 0));
-                a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-                a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-                a_mv_matrix = glm::scale(a_mv_matrix, scale);
-                glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-                glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-                //wall4 1/2
-                a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2 - 4, -2, -scale.z/2));
-                a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-                a_mv_matrix = glm::scale(a_mv_matrix, scale);
-                glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-                glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-                //wall4 2/2
-                a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2 + 4, -2, -scale.z/2));
-                a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-                a_mv_matrix = glm::scale(a_mv_matrix, scale);
-                glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-                glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+            if (idx == 2) {
+                draw_skybox(moonProgram, objs, idx, sky_tex);
             }
         }
 
