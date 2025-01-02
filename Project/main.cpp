@@ -131,11 +131,11 @@ GLuint gen_tex_gluint(std::unique_ptr<glimac::Image>& texture_ptr) {
     return tex;
 }
 
-void draw_earth_moon_scene(const EarthProgram& earthProgram, const MoonProgram& moonProgram, int objIdx, 
+void draw_earth_moon_scene(const EarthProgram& earthProgram, const MoonProgram& moonProgram, glm::vec3 origin, int objIdx, 
                                  GLuint earth_tex, GLuint cloud_tex, GLuint moon_tex, const std::vector<std::unique_ptr<Object>>& objs,
                                  const std::vector<glm::vec3>& moons) {
 
-    auto mv_matrix = camera.getViewMatrix();
+    auto mv_matrix = glm::translate( camera.getViewMatrix(), origin );
     auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
     auto normal_matrix = glm::transpose(glm::inverse(mv_matrix));
     earthProgram.m_Program.use();
@@ -166,11 +166,119 @@ void draw_earth_moon_scene(const EarthProgram& earthProgram, const MoonProgram& 
     }
 }
 
-void draw_room1(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, int idx, 
+void draw_room1(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, glm::vec3 origin, int idx, 
                 GLuint floor_tex, GLuint wall_brick_tex) {
-    auto mv_matrix = camera.getViewMatrix();
+    auto mv_matrix =  glm::translate( camera.getViewMatrix(), origin );
     auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
-    glm::vec3 scale(24, 1, 20);
+    glm::vec3 scale(24, 15, 20);
+
+    moonProgram.m_Program.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, floor_tex);
+    
+    //floor
+    auto a_mv_matrix = glm::scale(glm::translate(mv_matrix, glm::vec3(0, -2, 0)), scale);
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+    glBindTexture(GL_TEXTURE_2D, wall_brick_tex);
+
+    //wall1
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(0, -2, scale.z/2));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall2
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2, -2, 0));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall3
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2, -2, 0));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall4 1/2
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2 - 2, -2, -scale.z/2));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall4 2/2
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2 + 2, -2, -scale.z/2));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+}
+
+void draw_room2(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, glm::vec3 origin, int idx, 
+                GLuint floor_tex, GLuint wall_brick_tex) {
+    auto mv_matrix = glm::rotate( glm::translate( camera.getViewMatrix(), origin ), glm::radians(180.0f), glm::vec3(0, 1, 0) );
+    auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
+    glm::vec3 scale(24, 15, 20);
+
+    moonProgram.m_Program.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, floor_tex);
+    
+    //floor
+    auto a_mv_matrix = glm::scale(glm::translate(mv_matrix, glm::vec3(0, -2, 0)), scale);
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+    glBindTexture(GL_TEXTURE_2D, wall_brick_tex);
+
+    //wall1
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(0, -2, scale.z/2));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall2
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2, -2, 0));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall3
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2, -2, 0));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall4 1/2
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2 - 2, -2, -scale.z/2));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+
+    //wall4 2/2
+    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2 + 2, -2, -scale.z/2));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
+    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
+    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
+}
+
+void draw_corridor(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, glm::vec3 origin, int idx, 
+                GLuint floor_tex, GLuint wall_brick_tex) {
+    auto mv_matrix =  glm::translate( camera.getViewMatrix(), origin );
+    auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
+    glm::vec3 scale(4, 15, 2);
 
     moonProgram.m_Program.use();
     glActiveTexture(GL_TEXTURE0);
@@ -183,48 +291,19 @@ void draw_room1(const MoonProgram& moonProgram, const std::vector<std::unique_pt
 
     glBindTexture(GL_TEXTURE_2D, wall_brick_tex);
 
-    //wall1
-    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(0, -2, scale.z/2));
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
     //wall2
     a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2, -2, 0));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
     a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
     a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
     glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
     glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
 
     //wall3
     a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2, -2, 0));
+    a_mv_matrix = glm::scale(a_mv_matrix, scale);
     a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
     a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-    //wall3
-    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2, -2, 0));
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-    //wall4 1/2
-    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2 - 4, -2, -scale.z/2));
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-    //wall4 2/2
-    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2 + 4, -2, -scale.z/2));
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
     glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
     glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
 }
@@ -247,16 +326,16 @@ void draw_skybox(const MoonProgram& moonProgram, const std::vector<std::unique_p
 
 void process_continuous_input(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera.moveUp(0.2f);
+        camera.tryMoveUp(0.2f);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera.moveUp(-0.2f);
+        camera.tryMoveUp(-0.2f);
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        camera.moveLeft(0.2f);
+        camera.tryMoveLeft(0.2f);
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        camera.moveLeft(-0.2f);
+        camera.tryMoveLeft(-0.2f);
     }
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
@@ -379,11 +458,13 @@ int main(int argc, char *argv[])
 
             // For Earth
             if (idx == 0) {
-                draw_earth_moon_scene(earthProgram, moonProgram, idx, earth_tex, cloud_tex, moon_tex, objs, moons);
+                draw_earth_moon_scene(earthProgram, moonProgram, glm::vec3(0, 0, 11), idx, earth_tex, cloud_tex, moon_tex, objs, moons);
             }
 
             if (idx == 1) {
-                draw_room1(moonProgram, objs, idx, floor_tex, wall_brick_tex);
+                draw_room1(moonProgram, objs, glm::vec3(0, 0, 11), idx, floor_tex, wall_brick_tex);
+                draw_room2(moonProgram, objs, glm::vec3(0, 0, -11), idx, floor_tex, wall_brick_tex);
+                draw_corridor(moonProgram, objs, glm::vec3(0, 0, 0), idx, floor_tex, wall_brick_tex);
             }
 
             if (idx == 2) {
@@ -406,8 +487,6 @@ int main(int argc, char *argv[])
     glDeleteTextures(1, &cloud_tex);
     glDeleteBuffers(objs.size(), vbos.data());
     glDeleteVertexArrays(objs.size(), vaos.data());
-    //glDeleteBuffers(objs.size(), vbo.data());
-    //glDeleteVertexArrays(objs.size(), vao.data());
     glfwTerminate();
     return 0;
 }
