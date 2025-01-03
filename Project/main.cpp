@@ -80,6 +80,36 @@ struct BlinnPhongProgram {
     }
 };
 
+struct PointLightProgram {
+    glimac::Program m_Program;
+
+    GLint uMVPMatrix;
+    GLint uMVMatrix;
+    GLint uNormalMatrix;
+    GLint uEarthTexture;
+    GLint uCloudTexture;
+    GLint uKd;
+    GLint uKs;
+    GLint uShininess;
+    GLint uLightPos_vs;
+    GLint uLightIntensity;
+
+    PointLightProgram(const glimac::FilePath& applicationPath):
+        m_Program(loadProgram(applicationPath.dirPath() + "Project/shaders/3D.vs.glsl",
+                              applicationPath.dirPath() + "Project/shaders/pointlight.fs.glsl")) {
+        uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
+        uMVMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVMatrix");
+        uNormalMatrix = glGetUniformLocation(m_Program.getGLId(), "uNormalMatrix");
+        uEarthTexture = glGetUniformLocation(m_Program.getGLId(), "uEarthTexture");
+        uCloudTexture = glGetUniformLocation(m_Program.getGLId(), "uCloudTexture");
+        uKd = glGetUniformLocation(m_Program.getGLId(), "uKd");
+        uKs = glGetUniformLocation(m_Program.getGLId(), "uKs");
+        uShininess = glGetUniformLocation(m_Program.getGLId(), "uShininess");
+        uLightPos_vs = glGetUniformLocation(m_Program.getGLId(), "uLightPos_vs");
+        uLightIntensity = glGetUniformLocation(m_Program.getGLId(), "uLightIntensity");
+    }
+};
+
 struct SimpleTextureProgram {
     glimac::Program m_Program;
 
@@ -161,17 +191,23 @@ GLuint gen_tex_gluint(std::unique_ptr<glimac::Image>& texture_ptr) {
     return tex;
 }
 
-void drawEarthMoon(const BlinnPhongProgram& program, const SimpleTextureProgram& moonProgram, glm::vec3 origin, int objIdx, 
+void drawEarthMoon(const PointLightProgram& program, const SimpleTextureProgram& moonProgram, glm::vec3 origin, int objIdx, 
                                  GLuint earth_tex, GLuint cloud_tex, GLuint moon_tex, const std::vector<std::unique_ptr<Object>>& objs,
                                  const std::vector<glm::vec3>& moons) {
 
-    auto mv_matrix = glm::translate( camera.getViewMatrix(), origin );
+    auto model_matrix = glm::translate(glm::mat4(1.0f), origin);
+    auto mv_matrix = camera.getViewMatrix() * model_matrix;
     auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
     auto normal_matrix = glm::transpose(glm::inverse(mv_matrix));
 
     // Calcul de la direction de la lumière en fonction du temps
-    glm::vec3 light_dir_world = glm::rotate(glm::mat4(1.f), glimac::getTime(), glm::vec3(0, 1, 0)) * glm::vec4(1, 1, 1, 0);
-    glm::vec3 light_dir_vs = glm::vec3(mv_matrix * glm::vec4(light_dir_world, 0.0));
+    //glm::vec3 light_dir_world = glm::rotate(glm::mat4(1.f), glimac::getTime(), glm::vec3(0, 1, 0)) * glm::vec4(1, 1, 1, 0);
+    //glm::vec3 light_dir_vs = glm::vec3(mv_matrix * glm::vec4(light_dir_world, 0.0));
+
+    glm::vec3 lightPos_world (1, 1, 1);
+    glm::vec3 lightPos_vs = glm::vec3(glm::scale( glm::translate(model_matrix, glm::vec3(5)), glm::vec3(5) ) * glm::vec4(lightPos_world, 0.0));
+
+    // Calcul de la position de la lumière en fonction du temps
 
     program.m_Program.use();
 
@@ -188,8 +224,9 @@ void drawEarthMoon(const BlinnPhongProgram& program, const SimpleTextureProgram&
     glUniformMatrix4fv(program.uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normal_matrix));
 
     // Envoi des paramètres de lumière
-    glUniform3fv(program.uLightDir_vs, 1, glm::value_ptr(light_dir_vs));
-    glUniform3f(program.uLightIntensity, 1.0f, 1.0f, 1.0f);
+    //glUniform3fv(program.uLightDir_vs, 1, glm::value_ptr(light_dir_vs));
+    glUniform3fv(program.uLightPos_vs, 1, glm::value_ptr(lightPos_vs));
+    glUniform3f(program.uLightIntensity, 100.0f, 100.0f, 100.0f);
 
     // Envoi des coefficients de matériaux pour la Terre
     glUniform3f(program.uKd, 0.8f, 0.8f, 0.8f);
@@ -374,6 +411,7 @@ int main(int argc, char *argv[])
     glimac::FilePath applicationPath(argv[0]);
     MultiTextureProgram mtProgram (applicationPath);
     BlinnPhongProgram bpProgram (applicationPath);
+    PointLightProgram plProgram (applicationPath);
     SimpleTextureProgram moonProgram (applicationPath);
 
     glEnable(GL_DEPTH_TEST);
@@ -448,11 +486,12 @@ int main(int argc, char *argv[])
 
             // For Earth
             if (idx == 0) {
-                drawEarthMoon(bpProgram, moonProgram, glm::vec3(0, 0, 11), idx, earth_tex, cloud_tex, moon_tex, objs, moons);
+                
                 draw_skybox(moonProgram, objs, idx, sky_tex);
             }
 
             if (idx == 1) {
+                drawEarthMoon(plProgram, moonProgram, glm::vec3(0, -1, 11), idx, earth_tex, cloud_tex, moon_tex, objs, moons);
                 drawRoom(moonProgram, objs, 0.0f, glm::vec3(0, 0, 11), idx, floor_tex, wall_brick_tex);
                 drawRoom(moonProgram, objs, 180.0f, glm::vec3(0, 0, -11), idx, floor_tex, wall_brick_tex);
                 drawCorridor(moonProgram, objs, glm::vec3(0, 0, 0), idx, floor_tex, wall_brick_tex);

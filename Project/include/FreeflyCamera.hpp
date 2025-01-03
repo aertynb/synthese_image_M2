@@ -45,6 +45,20 @@ namespace glm
             return glm::lookAt(m_Position, m_Position + m_FrontVector, glm::normalize(m_UpVector));
         }
 
+        glm::mat4 getModelMatrix() const {
+            // Create a translation matrix based on the camera's position.
+            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), m_Position);
+
+            // Create a rotation matrix based on the camera's front, left, and up vectors.
+            glm::mat4 rotationMatrix = glm::mat4(1.0f);
+            rotationMatrix[0] = glm::vec4(m_LeftVector, 0.0f);  // X-axis (left vector)
+            rotationMatrix[1] = glm::vec4(m_UpVector, 0.0f);    // Y-axis (up vector)
+            rotationMatrix[2] = glm::vec4(-m_FrontVector, 0.0f); // Z-axis (front vector)
+
+            // The model matrix combines translation and rotation.
+            return translationMatrix * rotationMatrix;
+        }
+
         const glm::vec3& getPosition() const {
             return m_Position;
         }
