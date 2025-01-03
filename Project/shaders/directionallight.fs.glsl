@@ -4,7 +4,8 @@ in vec2 vVertexTex;
 in vec3 vVertexNormal;
 in vec3 vVertexPos;
 
-uniform sampler2D uTexture;
+uniform sampler2D uEarthTexture; 
+uniform sampler2D uCloudTexture; 
 
 uniform vec3 uKd;
 uniform vec3 uKs;
@@ -41,12 +42,10 @@ vec3 blinnPhong(vec3 normal, vec3 fragPos_vs) {
 
 
 void main() {
-    // Sample the texture
-    vec3 tex = texture(uTexture, vVertexTex).xyz;
+    vec3 earthTex = texture(uEarthTexture, vVertexTex).xyz;
+    vec3 cloudTex = texture(uCloudTexture, vVertexTex).xyz;
 
-    // Compute lighting
     vec3 lighting = blinnPhong(vVertexNormal, vVertexPos);
 
-    // Combine texture color with lighting
-    fFragColor = lighting;
+    fFragColor = (earthTex + cloudTex) * lighting;
 }

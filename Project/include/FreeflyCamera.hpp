@@ -1,7 +1,6 @@
 #pragma once
 
 #include <glimac/glm.hpp>
-#include "BoundingBox.hpp"
 
 namespace glm 
 {

@@ -18,7 +18,7 @@ bool first_mouse = true;
 
 glm::FreeflyCamera camera {};
 
-struct EarthProgram {
+struct MultiTextureProgram {
     glimac::Program m_Program;
 
     GLint uMVPMatrix;
@@ -27,7 +27,7 @@ struct EarthProgram {
     GLint uEarthTexture;
     GLint uCloudTexture;
 
-    EarthProgram(const glimac::FilePath& applicationPath):
+    MultiTextureProgram(const glimac::FilePath& applicationPath):
         m_Program(loadProgram(applicationPath.dirPath() + "TP3/shaders/3D.vs.glsl",
                               applicationPath.dirPath() + "TP3/shaders/multiTex3D.fs.glsl")) {
         uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
     auto vertex_shader = argv[1];
     auto fragment_shader = argv[2];
     glimac::FilePath applicationPath(argv[0]);
-    EarthProgram earthProgram (applicationPath);
+    MultiTextureProgram earthProgram (applicationPath);
     MoonProgram moonProgram (applicationPath);
 
     auto earth_tex_ptr = glimac::loadImage("/home/aertynb/Documents/M2/Synthese Image/GL_UGE_Template/assets/texture/EarthMap.jpg");

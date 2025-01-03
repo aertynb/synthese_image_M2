@@ -25,7 +25,7 @@ bool first_mouse = true;
 
 glm::FreeflyCamera camera {};
 
-struct EarthProgram {
+struct MultiTextureProgram {
     glimac::Program m_Program;
 
     GLint uMVPMatrix;
@@ -39,9 +39,9 @@ struct EarthProgram {
     GLint uLightDir_vs;
     GLint uLightIntensity;
 
-    EarthProgram(const glimac::FilePath& applicationPath):
-        m_Program(loadProgram(applicationPath.dirPath() + "TP5/shaders/3D.vs.glsl",
-                              applicationPath.dirPath() + "TP5/shaders/multiTex3D.fs.glsl")) {
+    MultiTextureProgram(const glimac::FilePath& applicationPath):
+        m_Program(loadProgram(applicationPath.dirPath() + "Project/shaders/3D.vs.glsl",
+                              applicationPath.dirPath() + "Project/shaders/multiTex3D.fs.glsl")) {
         uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
         uMVMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVMatrix");
         uNormalMatrix = glGetUniformLocation(m_Program.getGLId(), "uNormalMatrix");
@@ -50,7 +50,37 @@ struct EarthProgram {
     }
 };
 
-struct MoonProgram {
+struct BlinnPhongProgram {
+    glimac::Program m_Program;
+
+    GLint uMVPMatrix;
+    GLint uMVMatrix;
+    GLint uNormalMatrix;
+    GLint uEarthTexture;
+    GLint uCloudTexture;
+    GLint uKd;
+    GLint uKs;
+    GLint uShininess;
+    GLint uLightDir_vs;
+    GLint uLightIntensity;
+
+    BlinnPhongProgram(const glimac::FilePath& applicationPath):
+        m_Program(loadProgram(applicationPath.dirPath() + "Project/shaders/3D.vs.glsl",
+                              applicationPath.dirPath() + "Project/shaders/directionallight.fs.glsl")) {
+        uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
+        uMVMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVMatrix");
+        uNormalMatrix = glGetUniformLocation(m_Program.getGLId(), "uNormalMatrix");
+        uEarthTexture = glGetUniformLocation(m_Program.getGLId(), "uEarthTexture");
+        uCloudTexture = glGetUniformLocation(m_Program.getGLId(), "uCloudTexture");
+        uKd = glGetUniformLocation(m_Program.getGLId(), "uKd");
+        uKs = glGetUniformLocation(m_Program.getGLId(), "uKs");
+        uShininess = glGetUniformLocation(m_Program.getGLId(), "uShininess");
+        uLightDir_vs = glGetUniformLocation(m_Program.getGLId(), "uLightDir_vs");
+        uLightIntensity = glGetUniformLocation(m_Program.getGLId(), "uLightIntensity");
+    }
+};
+
+struct SimpleTextureProgram {
     glimac::Program m_Program;
 
     GLint uMVPMatrix;
@@ -63,9 +93,9 @@ struct MoonProgram {
     GLint uLightDir_vs;
     GLint uLightIntensity;
 
-    MoonProgram(const glimac::FilePath& applicationPath):
-        m_Program(loadProgram(applicationPath.dirPath() + "TP5/shaders/3D.vs.glsl",
-                              applicationPath.dirPath() + "TP5/shaders/tex3D.fs.glsl")) {
+    SimpleTextureProgram(const glimac::FilePath& applicationPath):
+        m_Program(loadProgram(applicationPath.dirPath() + "Project/shaders/3D.vs.glsl",
+                              applicationPath.dirPath() + "Project/shaders/tex3D.fs.glsl")) {
         uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
         uMVMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVMatrix");
         uNormalMatrix = glGetUniformLocation(m_Program.getGLId(), "uNormalMatrix");
@@ -131,24 +161,40 @@ GLuint gen_tex_gluint(std::unique_ptr<glimac::Image>& texture_ptr) {
     return tex;
 }
 
-void draw_earth_moon_scene(const EarthProgram& earthProgram, const MoonProgram& moonProgram, glm::vec3 origin, int objIdx, 
+void drawEarthMoon(const BlinnPhongProgram& program, const SimpleTextureProgram& moonProgram, glm::vec3 origin, int objIdx, 
                                  GLuint earth_tex, GLuint cloud_tex, GLuint moon_tex, const std::vector<std::unique_ptr<Object>>& objs,
                                  const std::vector<glm::vec3>& moons) {
 
     auto mv_matrix = glm::translate( camera.getViewMatrix(), origin );
     auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
     auto normal_matrix = glm::transpose(glm::inverse(mv_matrix));
-    earthProgram.m_Program.use();
+
+    // Calcul de la direction de la lumière en fonction du temps
+    glm::vec3 light_dir_world = glm::rotate(glm::mat4(1.f), glimac::getTime(), glm::vec3(0, 1, 0)) * glm::vec4(1, 1, 1, 0);
+    glm::vec3 light_dir_vs = glm::vec3(mv_matrix * glm::vec4(light_dir_world, 0.0));
+
+    program.m_Program.use();
+
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, earth_tex);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, cloud_tex);
-    glUniform1i(earthProgram.uEarthTexture, 0);
-    glUniform1i(earthProgram.uCloudTexture, 1);
 
-    glUniformMatrix4fv(earthProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * mv_matrix));
-    glUniformMatrix4fv(earthProgram.uMVMatrix, 1, GL_FALSE, glm::value_ptr(mv_matrix));
-    glUniformMatrix4fv(earthProgram.uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normal_matrix));
+    glUniform1i(program.uEarthTexture, 0);
+    glUniform1i(program.uCloudTexture, 1);
+
+    glUniformMatrix4fv(program.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * mv_matrix));
+    glUniformMatrix4fv(program.uMVMatrix, 1, GL_FALSE, glm::value_ptr(mv_matrix));
+    glUniformMatrix4fv(program.uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normal_matrix));
+
+    // Envoi des paramètres de lumière
+    glUniform3fv(program.uLightDir_vs, 1, glm::value_ptr(light_dir_vs));
+    glUniform3f(program.uLightIntensity, 1.0f, 1.0f, 1.0f);
+
+    // Envoi des coefficients de matériaux pour la Terre
+    glUniform3f(program.uKd, 0.8f, 0.8f, 0.8f);
+    glUniform3f(program.uKs, 0.5f, 0.5f, 0.5f);
+    glUniform1f(program.uShininess, 32.0f);
 
     glDrawArrays(GL_TRIANGLES, 0, objs[objIdx]->getVertexCount());
 
@@ -166,9 +212,9 @@ void draw_earth_moon_scene(const EarthProgram& earthProgram, const MoonProgram& 
     }
 }
 
-void draw_room1(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, glm::vec3 origin, int idx, 
+void drawRoom(const SimpleTextureProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, float rotateValue, glm::vec3 origin, int idx, 
                 GLuint floor_tex, GLuint wall_brick_tex) {
-    auto mv_matrix =  glm::translate( camera.getViewMatrix(), origin );
+    auto mv_matrix = glm::rotate( glm::translate( camera.getViewMatrix(), origin ), glm::radians(rotateValue), glm::vec3(0, 1, 0) );
     auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
     glm::vec3 scale(24, 15, 20);
 
@@ -220,61 +266,7 @@ void draw_room1(const MoonProgram& moonProgram, const std::vector<std::unique_pt
     glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
 }
 
-void draw_room2(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, glm::vec3 origin, int idx, 
-                GLuint floor_tex, GLuint wall_brick_tex) {
-    auto mv_matrix = glm::rotate( glm::translate( camera.getViewMatrix(), origin ), glm::radians(180.0f), glm::vec3(0, 1, 0) );
-    auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
-    glm::vec3 scale(24, 15, 20);
-
-    moonProgram.m_Program.use();
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, floor_tex);
-    
-    //floor
-    auto a_mv_matrix = glm::scale(glm::translate(mv_matrix, glm::vec3(0, -2, 0)), scale);
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-    glBindTexture(GL_TEXTURE_2D, wall_brick_tex);
-
-    //wall1
-    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(0, -2, scale.z/2));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-    //wall2
-    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2, -2, 0));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-    //wall3
-    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2, -2, 0));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-    //wall4 1/2
-    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(-scale.x/2 - 2, -2, -scale.z/2));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-
-    //wall4 2/2
-    a_mv_matrix = glm::translate(mv_matrix, glm::vec3(scale.x/2 + 2, -2, -scale.z/2));
-    a_mv_matrix = glm::scale(a_mv_matrix, scale);
-    a_mv_matrix = glm::rotate(a_mv_matrix, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
-    glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
-}
-
-void draw_corridor(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, glm::vec3 origin, int idx, 
+void drawCorridor(const SimpleTextureProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, glm::vec3 origin, int idx, 
                 GLuint floor_tex, GLuint wall_brick_tex) {
     auto mv_matrix =  glm::translate( camera.getViewMatrix(), origin );
     auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
@@ -308,16 +300,16 @@ void draw_corridor(const MoonProgram& moonProgram, const std::vector<std::unique
     glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
 }
 
-void draw_skybox(const MoonProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, int idx, 
+void draw_skybox(const SimpleTextureProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, int idx, 
                 GLuint sky_tex) {
     auto mv_matrix = camera.getViewMatrix();
-    auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 200.f);
+    auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 300.f);
     glm::vec3 scale(24, 1, 20);
 
     moonProgram.m_Program.use();
     glActiveTexture(GL_TEXTURE0);
 
-    mv_matrix =  glm::scale( glm::translate(mv_matrix, glm::vec3(0, 0, 0)), glm::vec3(200) );
+    mv_matrix =  glm::scale( glm::rotate( glm::translate(mv_matrix, glm::vec3(0, 0, 0)), glm::radians(180.0f), glm::vec3(1, 1, 0)), glm::vec3(200));
     glBindTexture(GL_TEXTURE_2D, sky_tex);
 
     glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * mv_matrix));
@@ -340,6 +332,15 @@ void process_continuous_input(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
+}
+
+GLuint getTexture(const std::string& path) {
+    auto ptr = glimac::loadImage(path);
+    if (ptr == NULL) {
+        std::cout << "Erreur chargement de texture : " << path << std::endl;
+        return -1;
+    }
+    return gen_tex_gluint(ptr);
 }
 
 int main(int argc, char *argv[])
@@ -371,20 +372,9 @@ int main(int argc, char *argv[])
         return -1;
     }
     glimac::FilePath applicationPath(argv[0]);
-    EarthProgram earthProgram (applicationPath);
-    MoonProgram moonProgram (applicationPath);
-
-    auto earth_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/EarthMap.jpg");
-    auto moon_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/MoonMap.jpg");
-    auto cloud_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/CloudMap.jpg");
-    auto wall_brick_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/wall_brick.jpg");
-    auto floor_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/floor.png");
-    auto sky_tex_ptr = glimac::loadImage(applicationPath.dirPath() + "assets/texture/sky.png");
-
-    if (earth_tex_ptr == NULL || moon_tex_ptr == NULL || cloud_tex_ptr == NULL || wall_brick_tex_ptr == NULL || floor_tex_ptr == NULL || sky_tex_ptr == NULL) {
-        std::cout << "Erreur chargement de texture" << std::endl;
-        return -1;
-    } 
+    MultiTextureProgram mtProgram (applicationPath);
+    BlinnPhongProgram bpProgram (applicationPath);
+    SimpleTextureProgram moonProgram (applicationPath);
 
     glEnable(GL_DEPTH_TEST);
     /* Hook input callbacks */
@@ -433,12 +423,12 @@ int main(int argc, char *argv[])
 
     std::vector<glm::vec3> moons;
 
-    GLuint earth_tex = gen_tex_gluint(earth_tex_ptr);
-    GLuint moon_tex = gen_tex_gluint(moon_tex_ptr);
-    GLuint cloud_tex = gen_tex_gluint(cloud_tex_ptr);
-    GLuint wall_brick_tex = gen_tex_gluint(wall_brick_tex_ptr);
-    GLuint floor_tex = gen_tex_gluint(floor_tex_ptr);
-    GLuint sky_tex = gen_tex_gluint(sky_tex_ptr);
+    GLuint earth_tex = getTexture(applicationPath.dirPath() + "assets/texture/EarthMap.jpg");
+    GLuint moon_tex = getTexture(applicationPath.dirPath() + "assets/texture/MoonMap.jpg");
+    GLuint cloud_tex = getTexture(applicationPath.dirPath() + "assets/texture/CloudMap.jpg");
+    GLuint wall_brick_tex = getTexture(applicationPath.dirPath() + "assets/texture/wall_brick.jpg");
+    GLuint floor_tex = getTexture(applicationPath.dirPath() + "assets/texture/floor.png");
+    GLuint sky_tex = getTexture(applicationPath.dirPath() + "assets/texture/sky.png");
 
     for (auto i = 0; i < 32; i++) {
         moons.push_back(glm::sphericalRand(2.));
@@ -458,17 +448,18 @@ int main(int argc, char *argv[])
 
             // For Earth
             if (idx == 0) {
-                draw_earth_moon_scene(earthProgram, moonProgram, glm::vec3(0, 0, 11), idx, earth_tex, cloud_tex, moon_tex, objs, moons);
+                drawEarthMoon(bpProgram, moonProgram, glm::vec3(0, 0, 11), idx, earth_tex, cloud_tex, moon_tex, objs, moons);
+                draw_skybox(moonProgram, objs, idx, sky_tex);
             }
 
             if (idx == 1) {
-                draw_room1(moonProgram, objs, glm::vec3(0, 0, 11), idx, floor_tex, wall_brick_tex);
-                draw_room2(moonProgram, objs, glm::vec3(0, 0, -11), idx, floor_tex, wall_brick_tex);
-                draw_corridor(moonProgram, objs, glm::vec3(0, 0, 0), idx, floor_tex, wall_brick_tex);
+                drawRoom(moonProgram, objs, 0.0f, glm::vec3(0, 0, 11), idx, floor_tex, wall_brick_tex);
+                drawRoom(moonProgram, objs, 180.0f, glm::vec3(0, 0, -11), idx, floor_tex, wall_brick_tex);
+                drawCorridor(moonProgram, objs, glm::vec3(0, 0, 0), idx, floor_tex, wall_brick_tex);
             }
 
             if (idx == 2) {
-                draw_skybox(moonProgram, objs, idx, sky_tex);
+                
             }
         }
 
