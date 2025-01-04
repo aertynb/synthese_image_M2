@@ -133,6 +133,37 @@ struct SimpleTextureProgram {
     }
 };
 
+struct TransparencyProgram {
+    glimac::Program m_Program;
+
+    GLint uMVPMatrix;
+    GLint uMVMatrix;
+    GLint uNormalMatrix;
+    GLint uTexture;
+    GLint uKd;
+    GLint uKs;
+    GLint uShininess;
+    GLint uLightDir_vs;
+    GLint uLightIntensity;
+
+    TransparencyProgram(const glimac::FilePath& applicationPath):
+        m_Program(loadProgram(applicationPath.dirPath() + "Project/shaders/3D.vs.glsl",
+                              applicationPath.dirPath() + "Project/shaders/transparency.fs.glsl")) {
+        uMVPMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVPMatrix");
+        uMVMatrix = glGetUniformLocation(m_Program.getGLId(), "uMVMatrix");
+        uNormalMatrix = glGetUniformLocation(m_Program.getGLId(), "uNormalMatrix");
+        uTexture = glGetUniformLocation(m_Program.getGLId(), "uTexture");
+    }
+};
+
+struct Planet{
+    glm::vec3 position;
+    GLuint texture;
+    float scale;
+    float speed;
+    float rotationSpeed;
+};
+
 static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (action == GLFW_PRESS) {
@@ -249,6 +280,53 @@ void drawEarthMoon(const PointLightProgram& program, const SimpleTextureProgram&
     }
 }
 
+void drawPlanetarySystem(const PointLightProgram& program, const SimpleTextureProgram& moonProgram, glm::vec3 origin, int objIdx, 
+                   GLuint sunTexture, const std::vector<Planet>& planets, const std::vector<std::unique_ptr<Object>>& objs) {
+    auto model_matrix = glm::translate(glm::mat4(1.0f), origin);
+    auto mv_matrix = glm::rotate(camera.getViewMatrix() * model_matrix, glimac::getTime(), glm::vec3(0, 1, 0));
+    auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
+    auto normal_matrix = glm::transpose(glm::inverse(mv_matrix));
+
+    program.m_Program.use();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, sunTexture);
+
+    glUniform1i(program.uEarthTexture, 0);
+    glUniform1i(program.uCloudTexture, 1);
+
+    glUniformMatrix4fv(program.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * mv_matrix));
+    glUniformMatrix4fv(program.uMVMatrix, 1, GL_FALSE, glm::value_ptr(mv_matrix));
+    glUniformMatrix4fv(program.uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normal_matrix));
+
+    glm::vec3 lightPos_world (0, 0, 0);
+    glm::vec3 lightPos_vs = glm::vec3(glm::scale( model_matrix, glm::vec3(1) ) * glm::vec4(lightPos_world, 0.0));
+
+    glUniform3fv(program.uLightPos_vs, 1, glm::value_ptr(lightPos_vs));
+    glUniform3f(program.uLightIntensity, 20.0f, 20.0f, 20.0f);
+
+    glUniform3f(program.uKd, 0.8f, 0.8f, 0.8f);
+    glUniform3f(program.uKs, 0.5f, 0.5f, 0.5f);
+    glUniform1f(program.uShininess, 32.0f);
+
+    glDrawArrays(GL_TRIANGLES, 0, objs[objIdx]->getVertexCount());
+
+    for (const auto& planet : planets) {
+        auto a_mv_matrix = glm::rotate(camera.getViewMatrix() * model_matrix, glimac::getTime()*planet.rotationSpeed, glm::vec3(0, 1, 0));
+        a_mv_matrix = glm::translate(a_mv_matrix, planet.position);
+        a_mv_matrix = glm::rotate(a_mv_matrix, glimac::getTime()*planet.speed, glm::vec3(0, 1, 0));
+        a_mv_matrix = glm::scale(glm::scale(a_mv_matrix, glm::vec3(0.2f)), glm::vec3(planet.scale));
+
+        glUniformMatrix4fv(moonProgram.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * a_mv_matrix));
+
+        glBindTexture(GL_TEXTURE_2D, planet.texture);
+        lightPos_world = -planet.position;
+        lightPos_vs = glm::vec3(glm::scale( glm::rotate( model_matrix, glimac::getTime() * planet.speed, glm::vec3(0, -1, 0)), glm::vec3(5) ) * glm::vec4(lightPos_world, 0.0));
+        glUniform3fv(program.uLightPos_vs, 1, glm::value_ptr(lightPos_vs));
+        glDrawArrays(GL_TRIANGLES, 0, objs[objIdx]->getVertexCount());
+    }
+}
+
 void drawRoom(const SimpleTextureProgram& moonProgram, const std::vector<std::unique_ptr<Object>>& objs, float rotateValue, glm::vec3 origin, int idx, 
                 GLuint floor_tex, GLuint wall_brick_tex) {
     auto mv_matrix = glm::rotate( glm::translate( camera.getViewMatrix(), origin ), glm::radians(rotateValue), glm::vec3(0, 1, 0) );
@@ -353,18 +431,47 @@ void draw_skybox(const SimpleTextureProgram& moonProgram, const std::vector<std:
     glDrawArrays(GL_TRIANGLES, 0, objs[idx]->getVertexCount());
 }
 
+void drawTransparent(const TransparencyProgram& program, glm::vec3 origin, int objIdx, 
+                    GLuint texture, const std::vector<std::unique_ptr<Object>>& objs) {
+    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    glDepthMask(GL_FALSE);
+
+    program.m_Program.use();
+
+    auto model_matrix = glm::rotate( glm::translate(glm::mat4(1.0f), origin), glm::radians(90.0f), glm::vec3(1, 0, 0));
+    auto mv_matrix = camera.getViewMatrix() * model_matrix;
+    auto proj_matrix = glm::perspective(glm::radians(70.f), (float) window_width / window_height, 0.1f, 100.f);
+    auto normal_matrix = glm::transpose(glm::inverse(mv_matrix));
+
+    glUniformMatrix4fv(program.uMVPMatrix, 1, GL_FALSE, glm::value_ptr(proj_matrix * mv_matrix));
+    glUniformMatrix4fv(program.uMVMatrix, 1, GL_FALSE, glm::value_ptr(mv_matrix));
+    glUniformMatrix4fv(program.uNormalMatrix, 1, GL_FALSE, glm::value_ptr(normal_matrix));
+
+    glUniform1i(program.uTexture, 0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glDrawArrays(GL_TRIANGLES, 0, objs[objIdx]->getVertexCount());
+    
+    glDepthMask(GL_TRUE);
+    
+    glDisable(GL_BLEND);
+}
+
 void process_continuous_input(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera.tryMoveUp(0.2f);
+        camera.tryMoveUp(0.1f);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera.tryMoveUp(-0.2f);
+        camera.tryMoveUp(-0.1f);
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        camera.tryMoveLeft(0.2f);
+        camera.tryMoveLeft(0.1f);
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        camera.tryMoveLeft(-0.2f);
+        camera.tryMoveLeft(-0.1f);
     }
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
@@ -413,6 +520,7 @@ int main(int argc, char *argv[])
     BlinnPhongProgram bpProgram (applicationPath);
     PointLightProgram plProgram (applicationPath);
     SimpleTextureProgram moonProgram (applicationPath);
+    TransparencyProgram tProgram (applicationPath);
 
     glEnable(GL_DEPTH_TEST);
     /* Hook input callbacks */
@@ -467,10 +575,25 @@ int main(int argc, char *argv[])
     GLuint wall_brick_tex = getTexture(applicationPath.dirPath() + "assets/texture/wall_brick.jpg");
     GLuint floor_tex = getTexture(applicationPath.dirPath() + "assets/texture/floor.png");
     GLuint sky_tex = getTexture(applicationPath.dirPath() + "assets/texture/sky.png");
+    GLuint sun_tex = getTexture(applicationPath.dirPath() + "assets/texture/sun.png");
+    GLuint space_tex = getTexture(applicationPath.dirPath() + "assets/texture/SpaceMap.jpg");
+    GLuint mars_tex = getTexture(applicationPath.dirPath() + "assets/texture/MarsMap.jpg");
+    GLuint mercury_tex = getTexture(applicationPath.dirPath() + "assets/texture/MercuryMap.jpg");
+    GLuint venus_tex = getTexture(applicationPath.dirPath() + "assets/texture/VenusMap.jpg");
+    GLuint jupiter_tex = getTexture(applicationPath.dirPath() + "assets/texture/JupiterMap.jpg");
+    GLuint saturn_tex = getTexture(applicationPath.dirPath() + "assets/texture/SaturnMap.jpg");
+    GLuint uranus_tex = getTexture(applicationPath.dirPath() + "assets/texture/UranusMap.jpg");
+    GLuint neptune_tex = getTexture(applicationPath.dirPath() + "assets/texture/NeptuneMap.jpg");
 
     for (auto i = 0; i < 32; i++) {
         moons.push_back(glm::sphericalRand(2.));
     }
+
+    //std::vector<GLuint> planetTextures {earth_tex, mars_tex};
+    std::vector<Planet> planets { {{0, 0, -1.5}, mercury_tex, 0.3f, 2.f, 3.f}, {{0, 0, -2}, venus_tex, 0.4f, 1.5f, 2.5f},
+                                {{0, 0, -3}, earth_tex, 1.f, 1.f, 1.f}, {{0.5, 0, -4}, mars_tex, 0.8f, 1.2f, 1.2f},
+                                {{0, 0, -6}, jupiter_tex, 2.5f, 0.5f, 0.8f}, {{1, 0, -7}, saturn_tex, 2.f, 0.8f, 0.8f},
+                                {{0, 0, -8}, uranus_tex, 1.2f, 0.6f, 0.9f}, {{0, 0, -9}, neptune_tex, 0.4, 0.8f, 1.f}};
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
@@ -486,19 +609,18 @@ int main(int argc, char *argv[])
 
             // For Earth
             if (idx == 0) {
-                
-                draw_skybox(moonProgram, objs, idx, sky_tex);
+                drawPlanetarySystem(plProgram, moonProgram, glm::vec3(0, 3, 11), idx, sun_tex, planets, objs);
+                draw_skybox(moonProgram, objs, idx, space_tex);
             }
 
             if (idx == 1) {
-                drawEarthMoon(plProgram, moonProgram, glm::vec3(0, -1, 11), idx, earth_tex, cloud_tex, moon_tex, objs, moons);
                 drawRoom(moonProgram, objs, 0.0f, glm::vec3(0, 0, 11), idx, floor_tex, wall_brick_tex);
                 drawRoom(moonProgram, objs, 180.0f, glm::vec3(0, 0, -11), idx, floor_tex, wall_brick_tex);
                 drawCorridor(moonProgram, objs, glm::vec3(0, 0, 0), idx, floor_tex, wall_brick_tex);
             }
 
             if (idx == 2) {
-                
+                drawTransparent(tProgram, glm::vec3(0, 0, -11), idx, earth_tex, objs);
             }
         }
 

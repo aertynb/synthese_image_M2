@@ -17,26 +17,20 @@ uniform vec3 uLightDir_vs; // viewspace
 out vec3 fFragColor;
 
 vec3 blinnPhong(vec3 normal, vec3 fragPos_vs) {
-    // Normalize vectors
     vec3 N = normalize(normal);
     vec3 L = normalize(uLightDir_vs);
     vec3 V = normalize(-fragPos_vs); // Opposé de la position du fragment
-
-    // Calculate halfway vector
     vec3 H = normalize(L + V);
 
-    // Diffuse term
     float diff = max(dot(N, L), 0.0);
     vec3 diffuse = uKd * diff * uLightIntensity;
 
-    // Specular term
     float spec = 0.0;
     if (diff > 0.0) {
         spec = pow(max(dot(N, H), 0.0), uShininess);
     }
     vec3 specular = uKs * spec * uLightIntensity;
 
-    // Combine results
     return diffuse + specular;
 }
 
