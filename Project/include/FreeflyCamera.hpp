@@ -45,8 +45,8 @@ namespace glm
             return glm::lookAt(m_Position, m_Position + m_FrontVector, glm::normalize(m_UpVector));
         }
 
-        const glm::vec3& getPosition() const {
-            return m_Position;
+        bool isInFirstRoom() const {
+            return m_Position.z >= 0;
         }
 
     private:

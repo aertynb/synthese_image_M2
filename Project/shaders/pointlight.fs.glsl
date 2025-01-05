@@ -4,8 +4,7 @@ in vec2 vVertexTex;
 in vec3 vVertexNormal;
 in vec3 vVertexPos;
 
-uniform sampler2D uEarthTexture; 
-uniform sampler2D uCloudTexture; 
+uniform sampler2D uTexture; 
 
 uniform vec3 uKd;
 uniform vec3 uKs;
@@ -40,11 +39,9 @@ vec3 pointLight() {
 }
 
 void main() {
-    vec3 earthTex = texture(uEarthTexture, vVertexTex).xyz;
-    vec3 cloudTex = texture(uCloudTexture, vVertexTex).xyz;
+    vec3 earthTex = texture(uTexture, vVertexTex).xyz;
 
-    vec3 combinedTex = mix(earthTex, cloudTex, 0.5);
     vec3 lighting = pointLight();
 
-    fFragColor = clamp((earthTex + cloudTex) * lighting, 0.0, 1.0);
+    fFragColor = clamp(earthTex * lighting, 0.0, 1.0);
 }
