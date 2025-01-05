@@ -17,6 +17,8 @@
 
 #include "pointer.hpp"
 
+bool polygoneMode = false;
+
 static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (action == GLFW_PRESS) {
@@ -26,6 +28,9 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
             //case GLFW_KEY_S : camera.moveUp(-1.); break;
             //case GLFW_KEY_D : camera.moveLeft(-1.); break;
             case GLFW_KEY_ESCAPE : glfwSetWindowShouldClose(window, true); break;
+            case GLFW_KEY_F : polygoneMode = !polygoneMode; if (polygoneMode) { glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); } else { glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); } break;
+            case GLFW_KEY_SPACE : animationStop = !animationStop; break;
+            case GLFW_KEY_L : lightOn = !lightOn; break;
         }
     }
 }
@@ -138,6 +143,7 @@ int main(int argc, char *argv[])
     TransparencyProgram tProgram (applicationPath);
 
     glEnable(GL_DEPTH_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     /* Hook input callbacks */
     glfwSetKeyCallback(window, &key_callback);
     glfwSetMouseButtonCallback(window, &mouse_button_callback);
@@ -199,6 +205,13 @@ int main(int argc, char *argv[])
     GLuint saturn_tex = getTexture(applicationPath.dirPath() + "assets/texture/SaturnMap.jpg");
     GLuint uranus_tex = getTexture(applicationPath.dirPath() + "assets/texture/UranusMap.jpg");
     GLuint neptune_tex = getTexture(applicationPath.dirPath() + "assets/texture/NeptuneMap.jpg");
+    GLuint space_wall_tex = getTexture(applicationPath.dirPath() + "assets/texture/SpaceWallMap.jpg");
+    GLuint sand_tex = getTexture(applicationPath.dirPath() + "assets/texture/SandMap.jpg");
+    GLuint pyramid_tex = getTexture(applicationPath.dirPath() + "assets/texture/PyramidMap.jpg");
+    GLuint desert_night_tex = getTexture(applicationPath.dirPath() + "assets/texture/DesertNightMap.png");
+    GLuint desert_day_tex = getTexture(applicationPath.dirPath() + "assets/texture/DesertDayMap.png");
+    GLuint glass_tex = getTexture(applicationPath.dirPath() + "assets/texture/GlassMap.png");
+    GLuint pannel_tex = getTexture(applicationPath.dirPath() + "assets/texture/HieroglypheMap.png");
 
     for (auto i = 0; i < 32; i++) {
         moons.push_back(glm::sphericalRand(2.));
@@ -210,10 +223,13 @@ int main(int argc, char *argv[])
                                 {{0, 0, -6}, jupiter_tex, 2.5f, 0.3f, 0.8f}, {{1, 0, -7}, saturn_tex, 2.f, 0.6f, 0.8f},
                                 {{0, 0, -8}, uranus_tex, 1.2f, 0.6f, 0.9f}, {{0, 0, -9}, neptune_tex, 0.4, 0.8f, 1.f}};
 
-    glm::vec3 sunPos (0, 0, 8);
+    glm::vec3 sunPos (0, 8, 11);
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
+        if (!animationStop) timeR += 0.01;
+        if (!lightOn) intensity = 0.0f;
+        else intensity = 30.0f;
         process_continuous_input(window);
         glClearColor(0.f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -229,31 +245,52 @@ int main(int argc, char *argv[])
                 switch(camera.isInFirstRoom()) {
                     case true : 
                         drawPlanetarySystem(plProgram, stProgram, sunPos, idx, sun_tex, planets, objs);
+                        drawCircle(bpProgram, objs, glm::vec3(0, -2, 11), earth_tex, idx);
                         draw_skybox(stProgram, objs, idx, space_tex);
                         break;
                     case false :
-                        drawPlanetarySystem(plProgram, stProgram, sunPos, idx, moon_tex, planets, objs);
+                        drawPlanetarySystem(stProgram, sunPos, idx, sun_tex, planets, objs);
+                        drawCircle(stProgram, objs, glm::vec3(0, -2, 11), earth_tex, idx);
                         draw_skybox(stProgram, objs, idx, sky_tex);
                         break;
                 }
-                
             }
 
             if (idx == 1) {
-                drawRoom(plProgram, objs, 0.0f, glm::vec3(0, 0, 11), sunPos, idx, floor_tex, space_tex);
-                drawRoom(plProgram, objs, 180.0f, glm::vec3(0, 0, -11), sunPos, idx, floor_tex, space_tex);
-                drawCorridor(stProgram, objs, glm::vec3(0, 0, 0), idx, floor_tex, wall_brick_tex);
+                switch(camera.isInFirstRoom()) {
+                    case true : 
+                        drawRoom(plProgram, objs, 0.0f, glm::vec3(0, 0, 11), sunPos, idx, space_wall_tex, space_tex);
+                        drawRoom(plProgram, objs, 180.0f, glm::vec3(0, 0, -11), sunPos, idx, sand_tex, desert_night_tex);
+                        drawCorridor(stProgram, objs, glm::vec3(0, 0, 0), idx, space_wall_tex, space_tex);
+                        break;
+                    case false :
+                        drawRoom(stProgram, objs, 0.0f, glm::vec3(0, 0, 11), idx, space_wall_tex, space_tex);
+                        drawRoom(stProgram, objs, 180.0f, glm::vec3(0, 0, -11), idx, sand_tex, desert_day_tex);
+                        drawCorridor(stProgram, objs, glm::vec3(0, 0, 0), idx, sand_tex, desert_day_tex);
+                        break;
+                }
             }
 
             if (idx == 2) {
-                drawTransparent(tProgram, glm::vec3(0, 0, -11), idx, earth_tex, objs);
+                switch(camera.isInFirstRoom()) {
+                    case true : 
+                        drawBoard(plProgram, objs, glm::vec3(0, -2, 11), sunPos, floor_tex, earth_tex, idx);
+                        drawPyramide(plProgram, objs, glm::vec3(0, 0, -11), sunPos, pyramid_tex, idx);
+                        break;
+                    case false :
+                        drawBoard(stProgram, objs, glm::vec3(0, -2, 11), floor_tex, earth_tex, idx);
+                        drawBoard(stProgram, objs, glm::vec3(0, -2, -18), floor_tex, earth_tex, idx);
+                        drawPanel(stProgram, objs, glm::vec3(0, 0, -18), pannel_tex, idx);
+                        drawPyramide(stProgram, objs, glm::vec3(0, 0, -11), pyramid_tex, idx);
+                        drawTransparent(tProgram, objs, glm::vec3(0, 0, -11), glm::vec3(11), idx, glass_tex );
+                        break;
+                }
             }
         }
 
         // Unbind after rendering
         glBindTexture(GL_TEXTURE_2D, 0);
         glBindVertexArray(0);
-
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
